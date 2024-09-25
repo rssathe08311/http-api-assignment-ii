@@ -43,6 +43,10 @@ const getUsers = (request, response) => {
     users,
   };
 
+  if(request.method == 'HEAD'){
+    return respondJSON(request, response, 200, {});
+  }
+
   respondJSON(request, response, 200, responseJSON);
 };
 
@@ -79,8 +83,13 @@ const addUser = (request, response) => {
   }
 }
 
-const updateUser = () => {
+const notFound = (request, response) => {
+  const responseJSON = {
+    message: 'The page you are looking for was not found',
+    id: 'notFound',
+  }
 
+  respondJSON(request, response, 404, responseJSON);
 }
 
 
@@ -92,4 +101,5 @@ module.exports = {
   getCSS,
   getUsers,
   addUser,
+  notFound,
 };
