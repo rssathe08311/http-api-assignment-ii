@@ -6,20 +6,25 @@ const style = fs.readFileSync(`${__dirname}/../client/style.css`);
 // function to get the index page
 const getIndex = (request, response) => {
   response.writeHead(200, { 'Content-Type': 'text/html' });
-  response.write(index);
+
+  if (request.method !== 'HEAD') {
+    response.write(index);
+  }
+
   response.end();
 };
 
 // function to get css page
 const getCSS = (request, response) => {
   response.writeHead(200, { 'Content-Type': 'text/css' });
-  response.write(style);
+  if (request.method !== 'HEAD') {
+    response.write(style);
+  }
   response.end();
 };
 
 //  object that only exists in memory while application is running
 const users = {};
-
 
 // function to respond with a json object
 const respondJSON = (request, response, status, object) => {
@@ -34,8 +39,7 @@ const respondJSON = (request, response, status, object) => {
   }
 
   response.end();
-}
-
+};
 
 //  returns list of users and a 200 code
 const getUsers = (request, response) => {
@@ -43,57 +47,52 @@ const getUsers = (request, response) => {
     users,
   };
 
-  if(request.method == 'HEAD'){
+  if (request.method === 'HEAD') {
     return respondJSON(request, response, 200, {});
   }
 
-  respondJSON(request, response, 200, responseJSON);
+  return respondJSON(request, response, 200, responseJSON);
 };
 
 const addUser = (request, response) => {
-  const responseJSON = {
-    message: 'Name and age are required',
-  }
+  const { name, age } = request.body;
 
-  const {name, age} = request.body;
+  let responseCode = 204;
 
   //  if both feilds are not present an error message will be sent back
-  if(!name || !age) { 
-    respondJSON.id = 'missingParams';
+  if (!name || !age) {
+    const responseJSON = {
+      message: 'Name and age are required',
+      id: 'missingParams',
+    };
     return respondJSON(request, response, 400, responseJSON);
   }
 
-  //  set default error code
-  let responseCode = 204;
-
-  // adds new user if their name does not exist in users yet
-  if(!users[name]) {
+  if (!users[name]) {
     responseCode = 201;
-    users[name] = {
-      name: name,
-    };
   }
 
-  // updates user fields
-  users[name].age = age;
+  users[name] = { name, age };
+  const responseJSON = {
+    message: 'User added or updated successfully',
+  };
 
-  if(responseCode == 201) {
-    responseJSON.message = 'Created Successfully';
-    return respondJSON(request, response, responseCode, {});
-  }
-}
+  // Respond with a 201 Created if a new user was added
+  return respondJSON(request, response, responseCode, responseJSON);
+};
 
 const notFound = (request, response) => {
   const responseJSON = {
     message: 'The page you are looking for was not found',
     id: 'notFound',
+  };
+
+  if (request.method === 'HEAD') {
+    return respondJSON(request, response, 404, {});
   }
 
-  respondJSON(request, response, 404, responseJSON);
-}
-
-
-
+  return respondJSON(request, response, 404, responseJSON);
+};
 
 // set out public exports
 module.exports = {
